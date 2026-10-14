@@ -1,0 +1,335 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Team Time Logger</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --lime: #A1C934;        /* Pinnacle secondary */
+    --green: #62A329;       /* running border */
+    --green-ink: #2F4D12;   /* text on pale green */
+    --green-pale: #F1F7E1;  /* running fill */
+    --green-wash: #EEF5DA;  /* toast */
+    --link: #4E7F1F;
+    --ink: #28292B;         /* Pinnacle primary */
+    --ink-2: #3D4752;
+    --muted: #69727D;
+    --line: #DDE1E6;
+    --line-soft: #EEF0F3;
+    --field: #C9CFD6;
+    --ground: #F5F5F5;
+    --surface: #FFFFFF;
+    --danger: #B42318;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font-family: 'Manrope', 'Segoe UI', sans-serif; font-size: 15px; font-variant-numeric: tabular-nums; }
+  button, input { font: inherit; }
+  button { cursor: pointer; }
+  :focus-visible { outline: 3px solid var(--link); outline-offset: 2px; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 28px 24px 64px; display: flex; flex-direction: column; gap: 24px; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  .muted { color: var(--muted); }
+  header { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 16px; }
+  h1 { margin: 0; font-size: 30px; font-weight: 700; letter-spacing: -.01em; }
+  h2 { margin: 0; font-size: 20px; font-weight: 700; }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pill { min-height: 44px; padding: 0 18px; border-radius: 999px; border: 1px solid var(--field); background: var(--surface); color: var(--ink); font-weight: 500; }
+  .pill.on { border-color: var(--lime); background: var(--lime); font-weight: 600; }
+  .dashed { min-height: 44px; padding: 0 16px; border-radius: 8px; border: 1px dashed #8A949E; background: transparent; color: var(--ink-2); font-weight: 500; }
+  .pill.dashed { border-radius: 999px; }
+  .btn { min-height: 44px; padding: 0 18px; border-radius: 8px; border: 1px solid var(--field); background: var(--surface); color: var(--ink); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; }
+  .btn.primary { border: 0; background: var(--lime); color: var(--ink); }
+  .btn.danger-text { color: var(--danger); }
+  .btn.danger { border: 0; background: var(--danger); color: #fff; font-weight: 700; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+  form.add { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 16px; }
+  form.add .field { display: flex; flex-direction: column; gap: 6px; flex: 1 1 260px; }
+  form.add label { font-size: 13px; font-weight: 600; }
+  form.add input { min-height: 44px; padding: 0 12px; border: 1px solid var(--field); border-radius: 8px; color: var(--ink); background: var(--surface); }
+  form.add .hint { flex-basis: 100%; font-size: 13px; color: var(--muted); }
+  .bar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-radius: 12px; background: var(--ink); color: #fff; }
+  .bar .row { display: flex; align-items: center; gap: 14px; }
+  .bar .sub { font-size: 13px; color: #C3CAD2; }
+  .bar .big { font-size: 32px; font-weight: 600; letter-spacing: .02em; }
+  .bar .stop { min-height: 44px; padding: 0 22px; border-radius: 8px; border: 0; background: var(--lime); color: var(--ink); font-weight: 700; }
+  .dot { width: 12px; height: 12px; border-radius: 50%; background: var(--lime); animation: pulse 1.2s ease-in-out infinite; flex: none; }
+  .dot.sm { width: 8px; height: 8px; background: var(--green); }
+  .ring { width: 12px; height: 12px; border-radius: 50%; border: 2px solid #8A949E; }
+  @keyframes pulse { 50% { opacity: .25; } }
+  @media (prefers-reduced-motion: reduce) { .dot { animation: none; } }
+  .matrix { overflow-x: auto; }
+  .matrix .inner { min-width: max-content; display: flex; flex-direction: column; }
+  .mrow { display: flex; align-items: stretch; border-bottom: 1px solid var(--line-soft); }
+  .mrow.head { background: #FAFBFC; border-bottom-color: var(--line); }
+  .mrow .name { flex: 0 0 200px; padding: 12px 16px; display: flex; flex-direction: column; justify-content: center; gap: 2px; position: sticky; left: 0; background: var(--surface); z-index: 1; }
+  .mrow.head .name { background: #FAFBFC; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .mrow .col { flex: 1 0 148px; padding: 8px; border-left: 1px solid var(--line-soft); }
+  .mrow.head .col { padding: 14px 12px; font-size: 14px; font-weight: 600; }
+  .mrow .addcol { flex: 0 0 120px; padding: 8px; border-left: 1px solid var(--line-soft); display: flex; align-items: center; }
+  .cell { width: 100%; min-height: 64px; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); text-align: left; display: flex; flex-direction: column; gap: 4px; }
+  .cell:hover { border-color: var(--link); }
+  .cell .t { font-size: 16px; font-weight: 500; }
+  .cell .h { font-size: 12px; color: var(--muted); }
+  .cell.on { border: 2px solid var(--green); background: var(--green-pale); color: var(--green-ink); }
+  .cell.on .t { display: flex; align-items: center; gap: 8px; font-size: 18px; font-weight: 600; }
+  .cell.on .h { color: var(--green-ink); font-weight: 600; }
+  .loghead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 16px 20px; border-bottom: 1px solid var(--line); }
+  .toast { margin: 12px 20px 0; padding: 10px 14px; border-radius: 8px; background: var(--green-wash); color: var(--green-ink); font-size: 14px; font-weight: 500; }
+  .table { overflow-x: auto; padding: 8px 12px 12px; }
+  .table .inner { min-width: 760px; }
+  .tr { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; padding: 12px 8px; border-bottom: 1px solid var(--line-soft); align-items: center; }
+  .tr.th { padding: 10px 8px; font-size: 12px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); border-bottom-color: var(--line); }
+  .tr .r { text-align: right; }
+  .tr .num { color: var(--ink-2); }
+  .empty { padding: 24px 8px; color: var(--muted); }
+  .overlay { position: fixed; inset: 0; z-index: 50; background: rgba(40, 41, 43, .55); display: flex; align-items: center; justify-content: center; padding: 16px; }
+  .dialog { width: 100%; max-width: 440px; background: var(--surface); border-radius: 14px; padding: 24px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 20px 50px rgba(0,0,0,.25); }
+  .dialog p { margin: 0; color: var(--ink-2); line-height: 1.5; }
+  .dialog .actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 6px; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+/* ------------------------------------------------------------------
+   Team Time Logger — no build step, no deps.
+   Advisers, tasks, users, the log and running timers are saved to this
+   browser's localStorage, so a refresh (or closing the tab) keeps
+   everything — including a timer that's still running.
+------------------------------------------------------------------- */
+const STORE_KEY = 'time-logger:v1';
+const state = {
+  users: ['Charles'],
+  me: 'Charles',
+  advisers: ['Adam Cooper', 'Jake Harcourt', 'Nehemiah Yeboah'],
+  tasks: ['Client meeting', 'LOA/CYC', 'Submission'],
+  log: [],          // { id, user, adviser, task, start, end }  (epoch ms)
+  running: {},      // { [user]: { adviser, task, start } }
+  adding: null,     // 'task' | 'adviser' | 'user' | null
+  confirmReset: false,
+  toast: ''
+};
+let nextId = 1, toastTimer = null;
+
+function load() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORE_KEY) || 'null');
+    if (!saved) return;
+    ['users', 'advisers', 'tasks', 'log'].forEach((k) => { if (Array.isArray(saved[k])) state[k] = saved[k]; });
+    if (saved.running && typeof saved.running === 'object') state.running = saved.running;
+    if (state.users.includes(saved.me)) state.me = saved.me;
+    nextId = state.log.reduce((m, e) => Math.max(m, e.id), 0) + 1;
+  } catch (e) { /* storage blocked or corrupt — start from the seed data */ }
+}
+
+function save() {
+  try {
+    const { users, me, advisers, tasks, log, running } = state;
+    localStorage.setItem(STORE_KEY, JSON.stringify({ users, me, advisers, tasks, log, running }));
+  } catch (e) { /* private mode etc. — keep working in memory */ }
+}
+
+const startOfToday = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const pad = (n) => String(n).padStart(2, '0');
+const hms = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return pad(Math.floor(s / 3600)) + ':' + pad(Math.floor(s % 3600 / 60)) + ':' + pad(s % 60); };
+const hm = (ms) => { const m = Math.round(ms / 60000); return Math.floor(m / 60) + 'h ' + pad(m % 60) + 'm'; };
+const clock = (t) => { const d = new Date(t); return pad(d.getHours()) + ':' + pad(d.getMinutes()); };
+
+function flash(text) {
+  clearTimeout(toastTimer);
+  state.toast = text; render();
+  toastTimer = setTimeout(() => { state.toast = ''; render(); }, 3000);
+}
+
+function toggle(adviser, task) {
+  const me = state.me, r = state.running[me];
+  if (r) {
+    state.log.unshift({ id: nextId++, user: me, adviser: r.adviser, task: r.task, start: r.start, end: Date.now() });
+    delete state.running[me];
+  }
+  if (!r || r.adviser !== adviser || r.task !== task) state.running[me] = { adviser, task, start: Date.now() };
+  render();
+}
+
+function totals() {
+  const now = Date.now(), cell = {}, adv = {};
+  let mine = 0, team = 0, myCount = 0;
+  const add = (a, t, ms) => { cell[a + '|' + t] = (cell[a + '|' + t] || 0) + ms; adv[a] = (adv[a] || 0) + ms; team += ms; };
+  const today = startOfToday();
+  state.log.filter((e) => e.end >= today).forEach((e) => { const ms = e.end - e.start; add(e.adviser, e.task, ms); if (e.user === state.me) { mine += ms; myCount++; } });
+  Object.entries(state.running).forEach(([u, r]) => { const ms = now - Math.max(r.start, today); add(r.adviser, r.task, ms); if (u === state.me) mine += ms; });
+  return { cell, adv, mine, team, myCount };
+}
+
+function csv() {
+  const rows = [['User', 'Adviser', 'Task', 'Date', 'Start', 'End', 'Duration (mins)']].concat(
+    state.log.map((e) => [e.user, e.adviser, e.task, new Date(e.start).toLocaleDateString('en-GB'), clock(e.start), clock(e.end), Math.round((e.end - e.start) / 60000)]));
+  return '﻿' + rows.map((r) => r.map((v) => '"' + String(v).replace(/"/g, '""') + '"').join(',')).join('\r\n');
+}
+
+function exportCsv() {
+  const blob = new Blob([csv()], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'time-log-' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+}
+
+function copyForExcel() {
+  if (!state.log.length) { flash('Nothing logged yet.'); return; }
+  const rows = [['User', 'Adviser', 'Task', 'Date', 'Start', 'End', 'Duration (mins)']].concat(
+    state.log.map((e) => [e.user, e.adviser, e.task, new Date(e.start).toLocaleDateString('en-GB'), clock(e.start), clock(e.end), Math.round((e.end - e.start) / 60000)]));
+  const text = rows.map((r) => r.map((v) => String(v).replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n');
+  const done = () => flash('Copied ' + state.log.length + ' entries — paste straight into Excel.');
+  if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, () => flash('Couldn’t copy — use Export to Excel instead.'));
+  else flash('Copy isn’t available here — use Export to Excel instead.');
+}
+
+const ADD_COPY = {
+  task: ['New task name', 'e.g. Annual review', 'Adds a new column — it applies to every adviser.'],
+  adviser: ['New adviser name', 'e.g. Chris Webb', 'Adds a new row under the advisers.'],
+  user: ['New user name', 'e.g. Hannah', 'Adds someone who can log time. You’ll switch to them once added.']
+};
+
+function render() {
+  save();
+  const s = state, now = Date.now(), run = s.running[s.me], T = totals();
+  const app = document.getElementById('app');
+  const focusedId = document.activeElement && document.activeElement.id;
+  const draft = document.getElementById('tl-new') ? document.getElementById('tl-new').value : '';
+
+  const userPills = s.users.map((u) =>
+    `<button class="pill ${u === s.me ? 'on' : ''}" data-act="pick-user" data-v="${esc(u)}">${esc(u)}</button>`).join('');
+
+  const addForm = s.adding ? `
+    <form class="card add" data-act="submit-add">
+      <div class="field">
+        <label for="tl-new">${ADD_COPY[s.adding][0]}</label>
+        <input id="tl-new" placeholder="${ADD_COPY[s.adding][1]}" value="${esc(draft)}" autocomplete="off">
+      </div>
+      <button class="btn primary" type="submit">Add</button>
+      <button class="btn" type="button" data-act="cancel-add">Cancel</button>
+      <div class="hint">${ADD_COPY[s.adding][2]}</div>
+    </form>` : '';
+
+  const bar = run ? `
+    <div class="row"><span class="dot" aria-hidden="true"></span>
+      <div><div class="sub">${esc(s.me)} is timing</div><div style="font-size:18px;font-weight:600">${esc(run.adviser)} · ${esc(run.task)}</div></div></div>
+    <div class="row"><div class="big">${hms(now - run.start)}</div><button class="stop" data-act="stop">Stop &amp; log</button></div>` : `
+    <div class="row"><span class="ring" aria-hidden="true"></span><div style="font-size:16px;color:#E4E8EC">No timer running for ${esc(s.me)}</div></div>
+    <div class="row sub" style="gap:24px"><div>Today: <b style="color:#fff">${hm(T.mine)}</b></div><div>Entries: <b style="color:#fff">${T.myCount}</b></div></div>`;
+
+  const head = `<div class="mrow head"><div class="name">Adviser ↓ / Task →</div>${s.tasks.map((t) => `<div class="col">${esc(t)}</div>`).join('')}
+    <div class="addcol"><button class="dashed" style="width:100%" data-act="add" data-v="task">+ Task</button></div></div>`;
+
+  const rows = s.advisers.map((a, ai) => {
+    const cells = s.tasks.map((t, ti) => {
+      const on = run && run.adviser === a && run.task === t;
+      const others = Object.keys(s.running).filter((u) => u !== s.me && s.running[u].adviser === a && s.running[u].task === t);
+      const tot = T.cell[a + '|' + t] || 0;
+      const attrs = `data-act="toggle" data-a="${ai}" data-t="${ti}"`;
+      return `<div class="col">${on
+        ? `<button class="cell on" ${attrs} aria-pressed="true" aria-label="Stop timer: ${esc(a)}, ${esc(t)}"><span class="t"><span class="dot sm" aria-hidden="true"></span>${hms(now - run.start)}</span><span class="h">Click to stop</span></button>`
+        : `<button class="cell" ${attrs} aria-pressed="false" aria-label="Start timer: ${esc(a)}, ${esc(t)}"><span class="t">${tot ? hm(tot) : '—'}</span><span class="h">${others.length ? esc(others.join(', ')) + ' timing' : (run ? 'Switch to this' : 'Start')}</span></button>`}</div>`;
+    }).join('');
+    return `<div class="mrow"><div class="name"><div style="font-weight:600">${esc(a)}</div><div class="muted" style="font-size:13px">Today ${hm(T.adv[a] || 0)}</div></div>${cells}<div class="addcol"></div></div>`;
+  }).join('');
+
+  const logRows = s.log.length ? s.log.map((e) => `<div class="tr"><div style="font-weight:500">${esc(e.user)}</div><div>${esc(e.adviser)}</div><div>${esc(e.task)}</div>
+      <div class="num">${new Date(e.start).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} ${clock(e.start)}</div><div class="num">${clock(e.end)}</div><div class="r" style="font-weight:600">${hm(e.end - e.start)}</div></div>`).join('')
+    : `<div class="empty">Nothing logged yet. Click any cell above to start a timer.</div>`;
+
+  app.innerHTML = `
+  <div class="wrap">
+    <header>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <div class="eyebrow">Internal · Time log</div>
+        <h1>Log time</h1>
+        <div class="muted">Click an adviser × task to start. Click again to stop and log it.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="eyebrow" style="letter-spacing:.06em">Logging as</div>
+        <div class="pills">${userPills}<button class="pill dashed" data-act="add" data-v="user">+ User</button></div>
+      </div>
+    </header>
+    ${addForm}
+    <section class="bar" aria-label="Current timer">${bar}</section>
+    <section class="card matrix" aria-label="Advisers and tasks"><div class="inner">${head}${rows}
+      <div style="display:flex;padding:8px"><button class="dashed" style="flex:0 0 184px" data-act="add" data-v="adviser">+ Adviser</button></div></div></section>
+    <section class="card" aria-label="Time log">
+      <div class="loghead">
+        <div><h2>Log</h2><div class="muted" style="font-size:13px">${s.log.length} ${s.log.length === 1 ? 'entry' : 'entries'} · ${hm(T.team)} logged today</div></div>
+        <div class="pills">
+          <button class="btn danger-text" data-act="ask-reset">Reset</button>
+          <button class="btn" data-act="export">Export to Excel</button>
+          <button class="btn primary" data-act="share">Copy for Excel</button>
+        </div>
+      </div>
+      ${s.toast ? `<div class="toast" role="status">${esc(s.toast)}</div>` : ''}
+      <div class="table"><div class="inner">
+        <div class="tr th"><div>User</div><div>Adviser</div><div>Task</div><div>Start</div><div>End</div><div class="r">Duration</div></div>
+        ${logRows}
+      </div></div>
+    </section>
+  </div>
+  ${s.confirmReset ? `
+  <div class="overlay"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="rt">
+    <h2 id="rt">Are you sure?</h2>
+    <p>This clears all ${s.log.length} log entries and stops any running timers, setting every box back to zero. Advisers, tasks and users are kept. This can’t be undone, so export to Excel first if you need a copy.</p>
+    <div class="actions"><button class="btn" id="tl-cancel" data-act="cancel-reset">Cancel</button><button class="btn danger" data-act="do-reset">Yes, reset</button></div>
+  </div></div>` : ''}`;
+
+  // restore focus after re-render
+  const f = focusedId && document.getElementById(focusedId);
+  if (f) { f.focus(); if (f.setSelectionRange) f.setSelectionRange(f.value.length, f.value.length); }
+}
+
+document.addEventListener('click', (ev) => {
+  const el = ev.target.closest('[data-act]');
+  if (!el || el.tagName === 'FORM') return;
+  const act = el.dataset.act, v = el.dataset.v;
+  if (act === 'pick-user') { state.me = v; render(); }
+  else if (act === 'toggle') toggle(state.advisers[+el.dataset.a], state.tasks[+el.dataset.t]);
+  else if (act === 'stop') { const r = state.running[state.me]; if (r) toggle(r.adviser, r.task); }
+  else if (act === 'add') { state.adding = v; render(); const i = document.getElementById('tl-new'); i.value = ''; i.focus(); }
+  else if (act === 'cancel-add') { state.adding = null; render(); }
+  else if (act === 'export') exportCsv();
+  else if (act === 'share') copyForExcel();
+  else if (act === 'ask-reset') { state.confirmReset = true; render(); document.getElementById('tl-cancel').focus(); }
+  else if (act === 'cancel-reset') { state.confirmReset = false; render(); }
+  else if (act === 'do-reset') { state.log = []; state.running = {}; state.confirmReset = false; flash('Log reset. Everything is back to zero.'); }
+});
+
+document.addEventListener('submit', (ev) => {
+  ev.preventDefault();
+  const v = document.getElementById('tl-new').value.trim();
+  if (!v) return;
+  const key = { task: 'tasks', adviser: 'advisers', user: 'users' }[state.adding];
+  if (state[key].includes(v)) { flash(v + ' already exists.'); return; }
+  state[key].push(v);
+  if (state.adding === 'user') state.me = v;
+  state.adding = null;
+  flash('Added ' + v + '.');
+});
+
+document.addEventListener('keydown', (ev) => {
+  if (ev.key === 'Escape' && state.confirmReset) { state.confirmReset = false; render(); }
+});
+
+window.addEventListener('storage', (ev) => { if (ev.key === STORE_KEY) { load(); render(); } });
+
+// Tick only while a timer is running, so the add-form input isn't disturbed needlessly.
+setInterval(() => { if (Object.keys(state.running).length) render(); }, 1000);
+load();
+render();
+</script>
+</body>
+</html>
